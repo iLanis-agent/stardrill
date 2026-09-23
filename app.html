@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StarDrill - Drill</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#0b1110; color:#e9f2ef; min-height:100vh; }
+  .wrap { max-width:920px; margin:0 auto; padding:36px 20px 80px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; }
+  .logo { font-weight:800; font-size:20px; }
+  .logo span { color:#6ee7b7; }
+  .home { color:#8fa79d; text-decoration:none; font-size:14px; }
+  .home:hover { color:#fff; }
+  .panel { background:#101b18; border:1px solid #1e332c; border-radius:16px; padding:22px; margin-bottom:22px; }
+  label { display:block; font-size:12.5px; font-weight:600; color:#8fa79d; margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
+  select, input[type=range] { width:100%; background:#0b1110; border:1px solid #25443a; border-radius:10px; color:#e9f2ef; padding:11px 12px; font-size:15px; outline:none; }
+  .row { display:grid; grid-template-columns:2fr 1fr auto; gap:14px; align-items:end; }
+  button.go { background:linear-gradient(90deg,#10b981,#14b8a6); border:0; color:#fff; font-size:15px; font-weight:700; padding:12px 22px; border-radius:12px; cursor:pointer; white-space:nowrap; }
+  button.ghost { background:transparent; border:1px solid #25443a; color:#6ee7b7; font-size:13px; font-weight:600; padding:8px 14px; border-radius:10px; cursor:pointer; }
+  .qtext { font-size:19px; font-weight:700; line-height:1.4; color:#fff; margin:14px 0 4px; }
+  .qcat { font-size:12px; font-weight:700; color:#6ee7b7; text-transform:uppercase; letter-spacing:.06em; }
+  .timer { font-size:clamp(56px,9vw,88px); font-weight:800; letter-spacing:-.03em; text-align:center; font-variant-numeric:tabular-nums; background:linear-gradient(90deg,#6ee7b7,#5eead4); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .segs { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:18px; }
+  .seg { background:#0b1110; border:1px solid #25443a; border-radius:12px; padding:14px 12px; opacity:.55; transition:all .2s; }
+  .seg.active { border-color:#10b981; opacity:1; box-shadow:0 0 0 1px #10b981, 0 6px 24px rgba(16,185,129,.15); }
+  .seg.done { opacity:.85; border-color:#1e332c; }
+  .seg .k { font-size:22px; font-weight:800; color:#6ee7b7; }
+  .seg .l { font-size:13px; font-weight:700; color:#fff; margin:2px 0 4px; }
+  .seg .t { font-size:12px; color:#8fa79d; font-variant-numeric:tabular-nums; }
+  .hint { margin-top:16px; text-align:center; font-size:15.5px; color:#c7d8d1; min-height:24px; }
+  .bar { height:8px; background:#16251f; border-radius:999px; margin-top:16px; overflow:hidden; }
+  .bar > div { height:100%; background:linear-gradient(90deg,#10b981,#14b8a6); width:0; }
+  .ctl { display:flex; gap:10px; margin-top:18px; justify-content:center; }
+  .checks { display:flex; gap:14px; flex-wrap:wrap; margin:12px 0; }
+  .checks label { display:flex; align-items:center; gap:7px; font-size:14px; color:#e9f2ef; text-transform:none; letter-spacing:0; margin:0; cursor:pointer; }
+  .checks input { width:17px; height:17px; accent-color:#10b981; }
+  .score-big { font-size:52px; font-weight:800; background:linear-gradient(90deg,#6ee7b7,#5eead4); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .score-label { color:#c7d8d1; font-size:15px; }
+  .cov { display:grid; grid-template-columns:repeat(auto-fill,minmax(34px,1fr)); gap:6px; margin-top:12px; }
+  .cell { aspect-ratio:1; border-radius:8px; background:#16251f; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; color:#4f645c; cursor:pointer; border:1px solid transparent; }
+  .cell.c1 { background:rgba(251,191,36,.18); color:#fcd34d; }
+  .cell.c2 { background:rgba(110,231,183,.18); color:#6ee7b7; }
+  .cell:hover { border-color:#10b981; }
+  .stats-row { display:flex; gap:26px; flex-wrap:wrap; align-items:baseline; }
+  .stat-num { font-size:24px; font-weight:700; color:#fff; }
+  .stat-label { color:#8fa79d; font-size:13px; }
+  .hidden { display:none; }
+  .range-val { font-size:13px; color:#6ee7b7; font-weight:700; margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="logo">Star<span>Drill</span></div><a class="home" href="index.html">&#8592; Home</a></header>
+
+  <div class="panel" id="setupPanel">
+    <div class="row">
+      <div>
+        <label for="qsel">Question</label>
+        <select id="qsel"></select>
+      </div>
+      <div>
+        <label for="len">Answer length</label>
+        <select id="len">
+          <option value="60">60 seconds</option>
+          <option value="90" selected>90 seconds</option>
+          <option value="120">2 minutes</option>
+          <option value="180">3 minutes</option>
+        </select>
+      </div>
+      <button class="go" id="start">Start drill</button>
+    </div>
+    <div class="qtext" id="qtext"></div>
+    <div class="qcat" id="qcat"></div>
+    <div style="margin-top:10px"><button class="ghost" id="suggest">Suggest what to drill next</button></div>
+  </div>
+
+  <div class="panel hidden" id="drillPanel">
+    <div class="timer" id="timer">1:30</div>
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="segs" id="segs"></div>
+    <div class="hint" id="hint"></div>
+    <div class="ctl">
+      <button class="ghost" id="endEarly">End answer</button>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="ratePanel">
+    <label>Which parts did you actually cover?</label>
+    <div class="checks">
+      <label><input type="checkbox" id="cS"> Situation</label>
+      <label><input type="checkbox" id="cT"> Task</label>
+      <label><input type="checkbox" id="cA"> Action</label>
+      <label><input type="checkbox" id="cR"> Result</label>
+    </div>
+    <label for="clarity">Clarity (1 = rambly, 5 = crisp)</label>
+    <input type="range" id="clarity" min="1" max="5" value="3" step="1">
+    <div class="range-val" id="clarityVal">3</div>
+    <div style="margin-top:16px"><button class="go" id="scoreBtn">Score this rep</button></div>
+    <div id="scoreOut" style="margin-top:18px"></div>
+  </div>
+
+  <div class="panel" id="histPanel">
+    <div class="stats-row">
+      <div><div class="stat-num" id="totalReps">0</div><div class="stat-label">reps drilled</div></div>
+      <div><div class="stat-num" id="avgScore">-</div><div class="stat-label">average score</div></div>
+      <div><div class="stat-num" id="covCount">0/24</div><div class="stat-label">questions covered</div></div>
+    </div>
+    <label style="margin-top:16px">Coverage map (click a cell to load that question)</label>
+    <div class="cov" id="cov"></div>
+  </div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var LS = 'stardrill-history';
+  var history = [];
+  try { history = JSON.parse(localStorage.getItem(LS) || '[]'); } catch (e) {}
+
+  var plan = null, timerInt = null, startTs = 0, totalSec = 90, curQ = null;
+
+  function saveHist() { try { localStorage.setItem(LS, JSON.stringify(history)); } catch (e) {} }
+
+  // question select
+  StarEngine.QUESTIONS.forEach(function (q) {
+    var o = document.createElement('option');
+    o.value = q.id; o.textContent = '[' + q.cat + '] ' + q.text;
+    $('qsel').appendChild(o);
+  });
+
+  function showQ() {
+    curQ = StarEngine.QUESTIONS.find(function (q) { return q.id === $('qsel').value; });
+    $('qtext').textContent = curQ.text;
+    $('qcat').textContent = curQ.cat;
+  }
+  $('qsel').addEventListener('change', showQ);
+
+  $('suggest').addEventListener('click', function () {
+    var q = StarEngine.suggestNext(StarEngine.QUESTIONS, history, curQ && curQ.id);
+    $('qsel').value = q.id; showQ();
+  });
+
+  function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+  function beep(freq) {
+    try {
+      var ctx = beep.ctx || (beep.ctx = new (window.AudioContext || window.webkitAudioContext)());
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = freq; o.type = 'sine';
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  }
+
+  function renderSegs(activeIdx) {
+    $('segs').innerHTML = plan.map(function (s, i) {
+      var cls = i === activeIdx ? 'active' : (activeIdx > i || activeIdx === -2 ? 'done' : '');
+      return '<div class="seg ' + cls + '"><div class="k">' + s.key + '</div><div class="l">' + s.label + '</div><div class="t">' + s.seconds + 's</div></div>';
+    }).join('');
+  }
+
+  var lastIdx = -1;
+  function tick() {
+    var elapsed = Math.floor((Date.now() - startTs) / 1000);
+    var remaining = Math.max(0, totalSec - elapsed);
+    $('timer').textContent = fmt(remaining);
+    $('barFill').style.width = Math.min(100, 100 * elapsed / totalSec) + '%';
+    var at = StarEngine.segmentAt(plan, elapsed);
+    if (at === null) { finishDrill(); return; }
+    if (at.index !== lastIdx) {
+      lastIdx = at.index;
+      renderSegs(at.index);
+      $('hint').textContent = plan[at.index].hint;
+      beep(660 + at.index * 110);
+    }
+  }
+
+  function startDrill() {
+    totalSec = parseInt($('len').value, 10);
+    plan = StarEngine.segmentPlan(totalSec);
+    startTs = Date.now();
+    lastIdx = -1;
+    $('setupPanel').classList.add('hidden');
+    $('ratePanel').classList.add('hidden');
+    $('drillPanel').classList.remove('hidden');
+    renderSegs(0);
+    $('hint').textContent = plan[0].hint;
+    tick();
+    timerInt = setInterval(tick, 250);
+  }
+
+  function finishDrill() {
+    clearInterval(timerInt); timerInt = null;
+    renderSegs(-2);
+    $('timer').textContent = '0:00';
+    $('hint').textContent = 'Time! How did that feel?';
+    beep(880); setTimeout(function () { beep(880); }, 220);
+    setTimeout(function () {
+      $('drillPanel').classList.add('hidden');
+      $('ratePanel').classList.remove('hidden');
+    }, 900);
+  }
+
+  $('start').addEventListener('click', startDrill);
+  $('endEarly').addEventListener('click', finishDrill);
+
+  $('clarity').addEventListener('input', function () { $('clarityVal').textContent = $('clarity').value; });
+
+  $('scoreBtn').addEventListener('click', function () {
+    var parts = { S: $('cS').checked, T: $('cT').checked, A: $('cA').checked, R: $('cR').checked };
+    var clarity = parseInt($('clarity').value, 10);
+    var score = StarEngine.scoreSession(parts, clarity);
+    history.push({ qid: curQ.id, ts: Date.now(), score: score, len: totalSec });
+    saveHist();
+    $('scoreOut').innerHTML = '<div class="score-big">' + score + '</div><div class="score-label">' + StarEngine.scoreLabel(score) + ' - logged on "' + curQ.text.slice(0, 60) + '..."</div>';
+    setTimeout(function () {
+      $('ratePanel').classList.add('hidden');
+      $('setupPanel').classList.remove('hidden');
+      $('scoreOut').innerHTML = '';
+      ['cS','cT','cA','cR'].forEach(function (id) { $(id).checked = false; });
+      $('clarity').value = 3; $('clarityVal').textContent = '3';
+      renderHist();
+    }, 2600);
+  });
+
+  function renderHist() {
+    var cov = StarEngine.coverage(history);
+    $('totalReps').textContent = history.length;
+    var covered = Object.keys(cov).length;
+    $('covCount').textContent = covered + '/' + StarEngine.QUESTIONS.length;
+    $('avgScore').textContent = history.length ? Math.round(history.reduce(function (a, h) { return a + h.score; }, 0) / history.length) : '-';
+    $('cov').innerHTML = StarEngine.QUESTIONS.map(function (q, i) {
+      var c = cov[q.id];
+      var cls = !c ? '' : (c.bestScore >= 70 ? 'c2' : 'c1');
+      var label = c ? c.count : '';
+      return '<div class="cell ' + cls + '" data-q="' + q.id + '" title="' + q.text.replace(/"/g, '&quot;') + (c ? ' - best ' + c.bestScore : ' - not drilled') + '">' + label + '</div>';
+    }).join('');
+  }
+
+  $('cov').addEventListener('click', function (e) {
+    var q = e.target.getAttribute('data-q');
+    if (q) { $('qsel').value = q; showQ(); window.scrollTo(0, 0); }
+  });
+
+  showQ();
+  var first = StarEngine.suggestNext(StarEngine.QUESTIONS, history);
+  $('qsel').value = first.id; showQ();
+  renderHist();
+})();
+</script>
+</body>
+</html>
